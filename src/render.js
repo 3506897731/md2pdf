@@ -42,6 +42,21 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;');
 }
 
+function fileToDataUrl(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+  };
+  const mimeType = mimeTypes[ext] || 'application/octet-stream';
+  return `data:${mimeType};base64,${buffer.toString('base64')}`;
+}
+
 function buildHtmlDocument({
   title,
   bodyHtml,
@@ -111,17 +126,29 @@ function buildBrandBlock(brand) {
   }
 
   const eyebrow = brand.eyebrow || 'Made by';
+  const placement = brand.placement === 'title' ? 'title' : 'corner';
   const image = brand.logoSrc
     ? `<img src="${brand.logoSrc}" alt="${escapeHtml(brand.name || 'Brand logo')}">`
     : '';
+  const eyebrowBlock = placement === 'title' && brand.name
+    ? `<div class="brand__eyebrow">${escapeHtml(eyebrow)}</div>`
+    : '';
+  const nameBlock = brand.name
+    ? `<div class="brand__name">${escapeHtml(brand.name)}</div>`
+    : '';
+  const textBlock = placement === 'title' && (eyebrowBlock || nameBlock)
+    ? `
+      <div class="brand__text">
+        ${eyebrowBlock}
+        ${nameBlock}
+      </div>
+    `
+    : '';
 
   return `
-    <section class="brand" aria-label="Document brand">
+    <section class="brand brand--${placement}" aria-label="Document brand">
       ${image}
-      <div class="brand__text">
-        <div class="brand__eyebrow">${escapeHtml(eyebrow)}</div>
-        <div class="brand__name">${escapeHtml(brand.name || '')}</div>
-      </div>
+      ${textBlock}
     </section>
   `;
 }
@@ -251,6 +278,12 @@ async function convertMarkdownToPdf(options) {
   const customCss = options.customCssPath
     ? fs.readFileSync(path.resolve(options.customCssPath), 'utf8')
     : '';
+  const brand = options.brand
+    ? {
+        ...options.brand,
+        logoSrc: options.brand.logoPath ? fileToDataUrl(path.resolve(options.brand.logoPath)) : '',
+      }
+    : null;
   const html = buildHtmlDocument({
     title: options.title || path.basename(inputPath, path.extname(inputPath)),
     bodyHtml,
@@ -259,7 +292,7 @@ async function convertMarkdownToPdf(options) {
     baseHref: pathToFileURL(`${path.dirname(inputPath)}${path.sep}`).href,
     enableMath: options.math,
     margin: options.margin,
-    brand: options.brand,
+    brand,
   });
 
   const browser = await launchBrowser(options.browserPath);

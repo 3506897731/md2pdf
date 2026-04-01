@@ -3,8 +3,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { pathToFileURL } = require('url');
-
 const { Command } = require('commander');
 
 const { convertMarkdownToPdf } = require('./render');
@@ -24,6 +22,7 @@ program
   .option('--logo <file>', 'Brand logo shown at the top of the document')
   .option('--brand-name <name>', 'Brand name shown next to the logo')
   .option('--brand-eyebrow <text>', 'Small label shown above the brand name', 'Made by')
+  .option('--brand-placement <mode>', 'Brand placement: corner or title', 'corner')
   .option('--format <size>', 'PDF page format', 'A4')
   .option('--margin <size>', 'Page margin for all sides', '16mm')
   .option('--no-math', 'Disable KaTeX auto-rendering')
@@ -61,7 +60,8 @@ program
         brand: {
           name: options.brandName,
           eyebrow: options.brandEyebrow,
-          logoSrc: options.logo ? pathToFileURL(path.resolve(options.logo)).href : '',
+          placement: options.brandPlacement,
+          logoPath: options.logo ? path.resolve(options.logo) : '',
         },
       });
 

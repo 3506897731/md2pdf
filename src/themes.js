@@ -25,6 +25,7 @@ const sharedCSS = `
   }
 
   main {
+    position: relative;
     width: min(100%, var(--content-width));
     margin: 0 auto;
     padding: var(--content-padding);
@@ -33,43 +34,50 @@ const sharedCSS = `
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.9rem;
-    margin: 0 0 1.5rem;
-    padding: 0.55rem 0.85rem 0.55rem 0.65rem;
-    border: 1px solid var(--brand-border);
-    border-radius: 999px;
-    background: var(--brand-bg);
-    box-shadow: var(--brand-shadow);
+    gap: 0.45rem;
+    color: var(--muted);
   }
 
   .brand img {
-    width: 2.4rem;
-    height: 2.4rem;
-    border-radius: 999px;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 0.25rem;
     object-fit: cover;
     flex: none;
+  }
+
+  .brand--corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    opacity: 0.88;
+  }
+
+  .brand--title {
+    margin: 0 0 0.8rem;
   }
 
   .brand__text {
     display: flex;
     flex-direction: column;
-    gap: 0.08rem;
+    gap: 0.04rem;
     min-width: 0;
   }
 
   .brand__eyebrow {
     color: var(--muted);
-    font-size: 0.72rem;
+    font-size: 0.52rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
   .brand__name {
     color: var(--heading);
-    font-size: 0.98rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     line-height: 1.1;
   }
 
@@ -327,9 +335,6 @@ const github = `
     --syntax-value: #fbbf24;
     --syntax-accent: #c4b5fd;
     --syntax-danger: #fca5a5;
-    --brand-bg: rgba(255, 255, 255, 0.8);
-    --brand-border: #dbe7f6;
-    --brand-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   }
 
   html,
@@ -404,9 +409,6 @@ const minimal = `
     --syntax-value: #9f6a10;
     --syntax-accent: #7f4d7f;
     --syntax-danger: #b44343;
-    --brand-bg: rgba(255, 252, 248, 0.92);
-    --brand-border: #eadacc;
-    --brand-shadow: 0 8px 24px rgba(92, 66, 43, 0.08);
   }
 
   html,
@@ -487,9 +489,6 @@ const dark = `
     --syntax-value: #ffbe7a;
     --syntax-accent: #c297ff;
     --syntax-danger: #ff9b9b;
-    --brand-bg: rgba(17, 24, 38, 0.9);
-    --brand-border: #223047;
-    --brand-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
   }
 
   html,
