@@ -1,13 +1,40 @@
 {
-  "name": "md2pdf",
+  "name": "morro-md2pdf",
   "version": "0.1.0",
-  "description": "A simple Markdown to PDF CLI powered by Playwright",
+  "description": "Convert Markdown files into polished PDFs with Playwright",
+  "license": "MIT",
+  "author": "morro",
+  "homepage": "https://github.com/3506897731/md2pdf#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3506897731/md2pdf.git"
+  },
+  "bugs": {
+    "url": "https://github.com/3506897731/md2pdf/issues"
+  },
+  "keywords": [
+    "markdown",
+    "pdf",
+    "cli",
+    "playwright",
+    "katex",
+    "highlight"
+  ],
   "bin": {
     "md2pdf": "./src/cli.js"
   },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "start": "node src/cli.js",
-    "test": "node src/cli.js --help"
+    "test": "node src/cli.js --help",
+    "pack:check": "npm pack --dry-run"
   },
   "engines": {
     "node": ">=20"
