@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+test.pdf
+test-github.pdf
+test-minimal.pdf
+test-dark.pdf
