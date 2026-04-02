@@ -1,6 +1,6 @@
 {
   "name": "morro-md2pdf",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Convert Markdown files into polished PDFs with Playwright",
   "license": "MIT",
   "author": "morro",
@@ -21,10 +21,10 @@
     "highlight"
   ],
   "bin": {
-    "md2pdf": "./src/cli.js"
+    "md2pdf": "dist/cli.js"
   },
   "files": [
-    "src",
+    "dist",
     "README.md",
     "LICENSE"
   ],
@@ -32,9 +32,11 @@
     "access": "public"
   },
   "scripts": {
-    "start": "node src/cli.js",
-    "test": "node src/cli.js --help",
-    "pack:check": "npm pack --dry-run"
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "npm run build && node dist/cli.js --help",
+    "pack:check": "npm pack --dry-run --cache /tmp/md2pdf-npm-cache",
+    "prepack": "npm run build"
   },
   "engines": {
     "node": ">=20"
@@ -45,5 +47,10 @@
     "katex": "^0.16.44",
     "markdown-it": "^14.1.1",
     "playwright": "^1.59.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.2"
   }
 }

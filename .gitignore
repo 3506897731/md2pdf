@@ -1,7 +1,9 @@
 node_modules/
 .DS_Store
 *.tgz
+dist/
 test.pdf
 test-github.pdf
 test-minimal.pdf
 test-dark.pdf
+test-ts.pdf

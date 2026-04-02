@@ -14,6 +14,7 @@ Local development:
 
 ```bash
 npm install
+npm run build
 npm link
 ```
 
@@ -30,6 +31,13 @@ Basic conversion:
 ```bash
 md2pdf README.md
 md2pdf README.md -o docs/guide.pdf --theme minimal
+```
+
+From source without global install:
+
+```bash
+npm run build
+node dist/cli.js README.md -o docs/guide.pdf
 ```
 
 With custom CSS:

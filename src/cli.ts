@@ -1,12 +1,29 @@
 #!/usr/bin/env node
-'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { Command } = require('commander');
+import fs from 'node:fs';
+import path from 'node:path';
 
-const { convertMarkdownToPdf } = require('./render');
-const { listThemes } = require('./themes');
+import { Command } from 'commander';
+
+import { convertMarkdownToPdf, type BrandPlacement } from './render';
+import { listThemes } from './themes';
+
+interface CliOptions {
+  output?: string;
+  theme: string;
+  css?: string;
+  browser?: string;
+  title?: string;
+  logo?: string;
+  brandName?: string;
+  brandEyebrow: string;
+  brandPlacement: BrandPlacement;
+  format: string;
+  margin: string;
+  math: boolean;
+  outline: boolean;
+  listThemes?: boolean;
+}
 
 const program = new Command();
 
@@ -28,7 +45,7 @@ program
   .option('--no-math', 'Disable KaTeX auto-rendering')
   .option('--no-outline', 'Disable PDF outline/bookmarks')
   .option('--list-themes', 'Print the available built-in themes')
-  .action(async (input, options) => {
+  .action(async (input: string | undefined, options: CliOptions) => {
     try {
       if (options.listThemes) {
         for (const theme of listThemes()) {
@@ -41,7 +58,7 @@ program
         program.error('Missing input Markdown file. Pass a file path or use --list-themes.');
       }
 
-      const inputPath = path.resolve(input);
+      const inputPath = path.resolve(input as string);
       if (!fs.existsSync(inputPath)) {
         program.error(`Input file not found: ${inputPath}`);
       }
@@ -67,9 +84,9 @@ program
 
       console.log(`Wrote PDF: ${outputPath}`);
     } catch (error) {
-      console.error(error.message);
+      console.error((error as Error).message);
       process.exitCode = 1;
     }
   });
 
-program.parseAsync(process.argv);
+void program.parseAsync(process.argv);

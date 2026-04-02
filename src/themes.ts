@@ -1,4 +1,9 @@
-'use strict';
+export type ThemeName = 'github' | 'minimal' | 'dark';
+
+export interface ThemeDefinition {
+  label: string;
+  css: string;
+}
 
 const sharedCSS = `
   :root {
@@ -349,16 +354,12 @@ const github = `
     font-size: 2.5rem;
     line-height: 1.08;
     letter-spacing: -0.04em;
-    padding-bottom: 0.8rem;
-    border-bottom: 2px solid #dbe7f6;
   }
 
   h2 {
     font-size: 1.65rem;
     line-height: 1.18;
     letter-spacing: -0.03em;
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid #e4edf7;
   }
 
   h3 {
@@ -508,8 +509,6 @@ const dark = `
   h2 {
     font-size: 1.58rem;
     line-height: 1.18;
-    padding-bottom: 0.38rem;
-    border-bottom: 1px solid #233044;
   }
 
   h3 {
@@ -529,7 +528,7 @@ const dark = `
   }
 `;
 
-const themes = {
+const themes: Record<ThemeName, ThemeDefinition> = {
   github: {
     label: 'Modern technical document',
     css: `${sharedCSS}\n${github}`,
@@ -544,8 +543,8 @@ const themes = {
   },
 };
 
-function getTheme(name) {
-  const theme = themes[name];
+export function getTheme(name: string): ThemeDefinition {
+  const theme = themes[name as ThemeName];
   if (!theme) {
     const available = Object.keys(themes).join(', ');
     throw new Error(`Unknown theme "${name}". Available themes: ${available}`);
@@ -554,11 +553,9 @@ function getTheme(name) {
   return theme;
 }
 
-function listThemes() {
-  return Object.entries(themes).map(([name, theme]) => ({ name, label: theme.label }));
+export function listThemes(): Array<{ name: ThemeName; label: string }> {
+  return (Object.entries(themes) as Array<[ThemeName, ThemeDefinition]>).map(([name, theme]) => ({
+    name,
+    label: theme.label,
+  }));
 }
-
-module.exports = {
-  getTheme,
-  listThemes,
-};
