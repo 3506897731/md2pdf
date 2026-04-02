@@ -13,7 +13,6 @@ export type BrandPlacement = 'corner' | 'title';
 
 export interface BrandOptions {
   name?: string;
-  eyebrow?: string;
   placement?: BrandPlacement | string;
   logoPath?: string;
   logoSrc?: string;
@@ -52,7 +51,7 @@ const katexAutoRenderJs = fs.readFileSync(
 );
 
 function createMarkdownRenderer(): MarkdownIt {
-  return new MarkdownIt({
+  const markdownIt = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: true,
@@ -65,6 +64,42 @@ function createMarkdownRenderer(): MarkdownIt {
       return `<pre><code class="${className}">${value}</code></pre>`;
     },
   });
+
+  const originalTextRule =
+    markdownIt.renderer.rules.text ??
+    ((tokens, idx) => tokens[idx]?.content ?? '');
+
+  markdownIt.renderer.rules.text = (tokens, idx, options, env, self) => {
+    const rendered = originalTextRule(tokens, idx, options, env, self);
+    return rendered.replace(/==(.+?)==/g, '<mark>$1</mark>');
+  };
+
+  const originalImageRule =
+    markdownIt.renderer.rules.image ??
+    ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+
+  markdownIt.renderer.rules.image = (tokens, idx, options, env, self) => {
+    const token = tokens[idx];
+    const src = token.attrGet('src');
+
+    if (src && !/^(https?:|data:|file:|\/\/)/i.test(src)) {
+      const markdownPath = (env as { markdownPath?: string }).markdownPath;
+      if (markdownPath) {
+        const resolvedPath = path.resolve(path.dirname(markdownPath), src);
+        if (fs.existsSync(resolvedPath)) {
+          token.attrSet('src', fileToDataUrl(resolvedPath));
+        }
+      }
+    }
+
+    return originalImageRule(tokens, idx, options, env, self);
+  };
+
+  return markdownIt;
+}
+
+function stripFrontmatter(markdown: string): string {
+  return markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n*/, '');
 }
 
 function escapeHtml(value: string): string {
@@ -158,21 +193,16 @@ function buildBrandBlock(brand?: BrandOptions | null): string {
     return '';
   }
 
-  const eyebrow = brand.eyebrow || 'Made by';
   const placement: BrandPlacement = brand.placement === 'title' ? 'title' : 'corner';
   const image = brand.logoSrc
     ? `<img src="${brand.logoSrc}" alt="${escapeHtml(brand.name || 'Brand logo')}">`
     : '';
-  const eyebrowBlock = placement === 'title' && brand.name
-    ? `<div class="brand__eyebrow">${escapeHtml(eyebrow)}</div>`
-    : '';
   const nameBlock = brand.name
-    ? `<div class="brand__name">${escapeHtml(brand.name)}</div>`
+    ? `<div class="brand__name">by ${escapeHtml(brand.name)}</div>`
     : '';
-  const textBlock = placement === 'title' && (eyebrowBlock || nameBlock)
+  const textBlock = nameBlock
     ? `
       <div class="brand__text">
-        ${eyebrowBlock}
         ${nameBlock}
       </div>
     `
@@ -311,9 +341,9 @@ async function waitForRender(page: Page, enableMath: boolean): Promise<void> {
 export async function convertMarkdownToPdf(options: ConvertOptions): Promise<string> {
   const inputPath = path.resolve(options.inputPath);
   const outputPath = resolveOutputPath(inputPath, options.outputPath);
-  const markdown = fs.readFileSync(inputPath, 'utf8');
+  const markdown = stripFrontmatter(fs.readFileSync(inputPath, 'utf8'));
   const markdownRenderer = createMarkdownRenderer();
-  const bodyHtml = markdownRenderer.render(markdown);
+  const bodyHtml = markdownRenderer.render(markdown, { markdownPath: inputPath });
   const customCss = options.customCssPath
     ? fs.readFileSync(path.resolve(options.customCssPath), 'utf8')
     : '';
@@ -349,6 +379,12 @@ export async function convertMarkdownToPdf(options: ConvertOptions): Promise<str
         bottom: '0',
         left: '0',
       },
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate:
+        '<div style="width:100%;font-size:9px;color:#94a3b8;padding:0 16mm 8px 16mm;text-align:center;">' +
+        '<span class="pageNumber"></span> / <span class="totalPages"></span>' +
+        '</div>',
       printBackground: true,
       outline: options.outline,
       tagged: true,

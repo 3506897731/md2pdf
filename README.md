@@ -1,6 +1,6 @@
 # morro-md2pdf
 
-A Markdown-to-PDF CLI built on Playwright, with built-in themes, syntax highlighting, KaTeX rendering, and optional logo branding.
+A Markdown-to-PDF CLI built on Playwright, with built-in themes, syntax highlighting, KaTeX rendering, and a built-in morro brand mark.
 
 ## Install
 
@@ -52,16 +52,6 @@ With explicit browser path:
 md2pdf README.md --browser "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
 
-With logo branding:
-
-```bash
-md2pdf README.md \
-  --theme github \
-  --logo "/absolute/path/logo.png" \
-  --brand-name morro \
-  --brand-placement corner
-```
-
 ## Built-in Themes
 
 - `github`: modern technical document
@@ -81,7 +71,7 @@ md2pdf --list-themes
 - Server-side syntax highlighting with `highlight.js`
 - Offline KaTeX auto-rendering
 - Optional CSS override layer with `--css`
-- Optional local logo branding with `--logo`, `--brand-name`, and `--brand-placement`
+- Built-in morro logo branding in the PDF output
 
 ## Publish Checklist
 

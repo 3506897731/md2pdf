@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { Command } from 'commander';
 
-import { convertMarkdownToPdf, type BrandPlacement } from './render';
+import { convertMarkdownToPdf } from './render';
 import { listThemes } from './themes';
 
 interface CliOptions {
@@ -14,14 +14,8 @@ interface CliOptions {
   css?: string;
   browser?: string;
   title?: string;
-  logo?: string;
-  brandName?: string;
-  brandEyebrow: string;
-  brandPlacement: BrandPlacement;
   format: string;
   margin: string;
-  math: boolean;
-  outline: boolean;
   listThemes?: boolean;
 }
 
@@ -36,14 +30,8 @@ program
   .option('--css <file>', 'Extra CSS file to append after the built-in theme')
   .option('--browser <path>', 'Explicit Chromium/Chrome executable path')
   .option('--title <title>', 'Override the PDF document title')
-  .option('--logo <file>', 'Brand logo shown at the top of the document')
-  .option('--brand-name <name>', 'Brand name shown next to the logo')
-  .option('--brand-eyebrow <text>', 'Small label shown above the brand name', 'Made by')
-  .option('--brand-placement <mode>', 'Brand placement: corner or title', 'corner')
   .option('--format <size>', 'PDF page format', 'A4')
   .option('--margin <size>', 'Page margin for all sides', '16mm')
-  .option('--no-math', 'Disable KaTeX auto-rendering')
-  .option('--no-outline', 'Disable PDF outline/bookmarks')
   .option('--list-themes', 'Print the available built-in themes')
   .action(async (input: string | undefined, options: CliOptions) => {
     try {
@@ -72,13 +60,12 @@ program
         title: options.title,
         format: options.format,
         margin: options.margin,
-        math: options.math,
-        outline: options.outline,
+        math: true,
+        outline: true,
         brand: {
-          name: options.brandName,
-          eyebrow: options.brandEyebrow,
-          placement: options.brandPlacement,
-          logoPath: options.logo ? path.resolve(options.logo) : '',
+          name: 'morro',
+          placement: 'corner',
+          logoPath: path.resolve(__dirname, '..', 'assets', 'morro-logo.png'),
         },
       });
 
