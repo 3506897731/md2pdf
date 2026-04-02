@@ -1,4 +1,9 @@
-'use strict';
+export type ThemeName = 'github' | 'minimal' | 'dark';
+
+export interface ThemeDefinition {
+  label: string;
+  css: string;
+}
 
 const sharedCSS = `
   :root {
@@ -65,24 +70,16 @@ const sharedCSS = `
     min-width: 0;
   }
 
-  .brand__eyebrow {
-    color: var(--muted);
-    font-size: 0.52rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
   .brand__name {
-    color: var(--heading);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    color: var(--muted);
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     line-height: 1.1;
   }
 
   a {
-    color: var(--link);
+    color: var(--accent-strong);
     text-decoration-thickness: 0.08em;
     text-underline-offset: 0.18em;
   }
@@ -122,6 +119,45 @@ const sharedCSS = `
     margin-top: 1rem;
   }
 
+  h1 + ul,
+  h2 + ul,
+  h3 + ul,
+  h4 + ul,
+  h5 + ul,
+  h6 + ul,
+  h1 + ol,
+  h2 + ol,
+  h3 + ol,
+  h4 + ol,
+  h5 + ol,
+  h6 + ol,
+  h1 + blockquote,
+  h2 + blockquote,
+  h3 + blockquote,
+  h4 + blockquote,
+  h5 + blockquote,
+  h6 + blockquote,
+  h1 + pre,
+  h2 + pre,
+  h3 + pre,
+  h4 + pre,
+  h5 + pre,
+  h6 + pre,
+  h1 + table,
+  h2 + table,
+  h3 + table,
+  h4 + table,
+  h5 + table,
+  h6 + table,
+  h1 + figure,
+  h2 + figure,
+  h3 + figure,
+  h4 + figure,
+  h5 + figure,
+  h6 + figure {
+    margin-top: 1rem;
+  }
+
   img,
   svg,
   video,
@@ -142,6 +178,8 @@ const sharedCSS = `
     border-left: 0.22rem solid var(--accent-soft);
     background: var(--surface-soft);
     color: var(--muted);
+    border-radius: 10px;
+    box-shadow: var(--surface-shadow);
   }
 
   ul,
@@ -159,7 +197,7 @@ const sharedCSS = `
     border-spacing: 0;
     overflow: hidden;
     border: 1px solid var(--table-border);
-    border-radius: 14px;
+    box-shadow: var(--surface-shadow);
   }
 
   th,
@@ -193,14 +231,23 @@ const sharedCSS = `
     color: var(--inline-code-fg);
   }
 
+  mark {
+    background: var(--mark-bg);
+    color: var(--mark-fg);
+    padding: 0 0.22em 0.02em;
+    border-radius: 0;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
   pre {
     overflow: auto;
     padding: 1rem 1.1rem;
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--code-bg);
     color: var(--code-fg);
     border: 1px solid var(--code-border);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    box-shadow: var(--surface-shadow);
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
@@ -315,26 +362,31 @@ const github = `
     --paper: #ffffff;
     --ink: #1f2937;
     --heading: #0f172a;
+    --heading-soft: #334155;
     --muted: #526071;
-    --link: #0b66d6;
-    --accent-soft: #9fc3ff;
+    --link: rgb(92, 132, 214);
+    --accent-soft: rgb(166, 194, 250);
+    --accent-strong: rgb(92, 132, 214);
     --surface-soft: #f5f8fc;
+    --surface-shadow: none;
     --rule: #dbe4ef;
     --table-border: #d9e3ef;
     --table-head: #f3f7fb;
-    --table-stripe: #fafcff;
+    --table-stripe: #fdfefe;
     --inline-code-bg: #eef4fb;
     --inline-code-fg: #0f3f73;
-    --code-bg: #0f172a;
-    --code-fg: #e5eefb;
-    --code-border: #1e293b;
+    --code-bg: #fafcfe;
+    --code-fg: #1f2937;
+    --code-border: #d9e3ef;
+    --mark-bg: rgba(166, 194, 250, 0.42);
+    --mark-fg: #0f172a;
     --syntax-comment: #94a3b8;
-    --syntax-keyword: #93c5fd;
-    --syntax-title: #f8fafc;
-    --syntax-string: #86efac;
-    --syntax-value: #fbbf24;
-    --syntax-accent: #c4b5fd;
-    --syntax-danger: #fca5a5;
+    --syntax-keyword: rgb(92, 132, 214);
+    --syntax-title: #0f172a;
+    --syntax-string: #0f7b47;
+    --syntax-value: #a16207;
+    --syntax-accent: #7c3aed;
+    --syntax-danger: #c2410c;
   }
 
   html,
@@ -349,16 +401,25 @@ const github = `
     font-size: 2.5rem;
     line-height: 1.08;
     letter-spacing: -0.04em;
-    padding-bottom: 0.8rem;
-    border-bottom: 2px solid #dbe7f6;
   }
 
   h2 {
     font-size: 1.65rem;
     line-height: 1.18;
     letter-spacing: -0.03em;
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid #e4edf7;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--heading-soft);
+    padding: 0.12rem 0;
+  }
+
+  h2::before {
+    content: "";
+    width: 0.34rem;
+    height: 1.15em;
+    background: var(--accent-strong);
+    flex: none;
   }
 
   h3 {
@@ -389,19 +450,24 @@ const minimal = `
     --paper: #fffdfa;
     --ink: #302820;
     --heading: #17120d;
+    --heading-soft: #4b3327;
     --muted: #6f6255;
-    --link: #7d3f22;
+    --link: #c26a2d;
     --accent-soft: #dfc1a7;
-    --surface-soft: #f7efe6;
+    --accent-strong: #c26a2d;
+    --surface-soft: #fbf4ed;
+    --surface-shadow: none;
     --rule: #e8d9cb;
     --table-border: #e2d3c5;
-    --table-head: #f9f3ec;
-    --table-stripe: #fffcf8;
+    --table-head: #fcf7f1;
+    --table-stripe: #fffdfa;
     --inline-code-bg: #f4ece4;
     --inline-code-fg: #6a3320;
-    --code-bg: #fbf5ef;
+    --code-bg: #fdf9f4;
     --code-fg: #352920;
     --code-border: #e7d7c7;
+    --mark-bg: #d9ecff;
+    --mark-fg: #352920;
     --syntax-comment: #9a8471;
     --syntax-keyword: #8c3b2a;
     --syntax-title: #4a2316;
@@ -439,6 +505,18 @@ const minimal = `
   h2 {
     font-size: 1.55rem;
     line-height: 1.18;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.68rem;
+    color: var(--heading-soft);
+  }
+
+  h2::before {
+    content: "";
+    width: 0.42rem;
+    height: 1.05em;
+    background: var(--accent-strong);
+    flex: none;
   }
 
   h3 {
@@ -469,19 +547,24 @@ const dark = `
     --paper: #0d1117;
     --ink: #d6deeb;
     --heading: #f5f7fb;
+    --heading-soft: #dce6f5;
     --muted: #9eaabd;
     --link: #7cc5ff;
     --accent-soft: #2f81f7;
+    --accent-strong: #7cc5ff;
     --surface-soft: #111826;
+    --surface-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
     --rule: #263041;
     --table-border: #2b3546;
     --table-head: #131c2b;
     --table-stripe: #0f1520;
     --inline-code-bg: #182234;
     --inline-code-fg: #9ed0ff;
-    --code-bg: #060b12;
+    --code-bg: #101826;
     --code-fg: #e7edf7;
     --code-border: #1f2a39;
+    --mark-bg: rgba(124, 197, 255, 0.22);
+    --mark-fg: #f8fbff;
     --syntax-comment: #7f8ea3;
     --syntax-keyword: #7cc5ff;
     --syntax-title: #f8fbff;
@@ -508,8 +591,18 @@ const dark = `
   h2 {
     font-size: 1.58rem;
     line-height: 1.18;
-    padding-bottom: 0.38rem;
-    border-bottom: 1px solid #233044;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.72rem;
+    color: var(--heading-soft);
+  }
+
+  h2::before {
+    content: "";
+    width: 0.34rem;
+    height: 1.15em;
+    background: var(--accent-strong);
+    flex: none;
   }
 
   h3 {
@@ -529,7 +622,7 @@ const dark = `
   }
 `;
 
-const themes = {
+const themes: Record<ThemeName, ThemeDefinition> = {
   github: {
     label: 'Modern technical document',
     css: `${sharedCSS}\n${github}`,
@@ -544,8 +637,8 @@ const themes = {
   },
 };
 
-function getTheme(name) {
-  const theme = themes[name];
+export function getTheme(name: string): ThemeDefinition {
+  const theme = themes[name as ThemeName];
   if (!theme) {
     const available = Object.keys(themes).join(', ');
     throw new Error(`Unknown theme "${name}". Available themes: ${available}`);
@@ -554,11 +647,9 @@ function getTheme(name) {
   return theme;
 }
 
-function listThemes() {
-  return Object.entries(themes).map(([name, theme]) => ({ name, label: theme.label }));
+export function listThemes(): Array<{ name: ThemeName; label: string }> {
+  return (Object.entries(themes) as Array<[ThemeName, ThemeDefinition]>).map(([name, theme]) => ({
+    name,
+    label: theme.label,
+  }));
 }
-
-module.exports = {
-  getTheme,
-  listThemes,
-};

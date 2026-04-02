@@ -1,15 +1,47 @@
-'use strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
-const fs = require('fs');
-const path = require('path');
-const { execFileSync } = require('child_process');
-const { pathToFileURL } = require('url');
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import { chromium, type Browser, type Page } from 'playwright';
 
-const MarkdownIt = require('markdown-it');
-const hljs = require('highlight.js');
-const { chromium } = require('playwright');
+import { getTheme } from './themes';
 
-const { getTheme } = require('./themes');
+export type BrandPlacement = 'corner' | 'title';
+
+export interface BrandOptions {
+  name?: string;
+  placement?: BrandPlacement | string;
+  logoPath?: string;
+  logoSrc?: string;
+}
+
+export interface ConvertOptions {
+  inputPath: string;
+  outputPath?: string;
+  theme: string;
+  customCssPath?: string;
+  browserPath?: string;
+  title?: string;
+  format: string;
+  margin: string;
+  math: boolean;
+  outline: boolean;
+  brand?: BrandOptions;
+}
+
+interface HtmlDocumentOptions {
+  title: string;
+  bodyHtml: string;
+  themeName: string;
+  customCss: string;
+  baseHref: string;
+  enableMath: boolean;
+  margin: string;
+  brand?: BrandOptions | null;
+}
 
 const katexCss = fs.readFileSync(require.resolve('katex/dist/katex.min.css'), 'utf8');
 const katexJs = fs.readFileSync(require.resolve('katex/dist/katex.min.js'), 'utf8');
@@ -18,13 +50,13 @@ const katexAutoRenderJs = fs.readFileSync(
   'utf8',
 );
 
-function createMarkdownRenderer() {
-  return new MarkdownIt({
+function createMarkdownRenderer(): MarkdownIt {
+  const markdownIt = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: true,
-    highlight(code, language) {
-      const hasLanguage = language && hljs.getLanguage(language);
+    highlight(code: string, language: string) {
+      const hasLanguage = Boolean(language) && hljs.getLanguage(language);
       const value = hasLanguage
         ? hljs.highlight(code, { language, ignoreIllegals: true }).value
         : hljs.highlightAuto(code).value;
@@ -32,9 +64,45 @@ function createMarkdownRenderer() {
       return `<pre><code class="${className}">${value}</code></pre>`;
     },
   });
+
+  const originalTextRule =
+    markdownIt.renderer.rules.text ??
+    ((tokens, idx) => tokens[idx]?.content ?? '');
+
+  markdownIt.renderer.rules.text = (tokens, idx, options, env, self) => {
+    const rendered = originalTextRule(tokens, idx, options, env, self);
+    return rendered.replace(/==(.+?)==/g, '<mark>$1</mark>');
+  };
+
+  const originalImageRule =
+    markdownIt.renderer.rules.image ??
+    ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+
+  markdownIt.renderer.rules.image = (tokens, idx, options, env, self) => {
+    const token = tokens[idx];
+    const src = token.attrGet('src');
+
+    if (src && !/^(https?:|data:|file:|\/\/)/i.test(src)) {
+      const markdownPath = (env as { markdownPath?: string }).markdownPath;
+      if (markdownPath) {
+        const resolvedPath = path.resolve(path.dirname(markdownPath), src);
+        if (fs.existsSync(resolvedPath)) {
+          token.attrSet('src', fileToDataUrl(resolvedPath));
+        }
+      }
+    }
+
+    return originalImageRule(tokens, idx, options, env, self);
+  };
+
+  return markdownIt;
 }
 
-function escapeHtml(value) {
+function stripFrontmatter(markdown: string): string {
+  return markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n*/, '');
+}
+
+function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -42,10 +110,10 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;');
 }
 
-function fileToDataUrl(filePath) {
+function fileToDataUrl(filePath: string): string {
   const buffer = fs.readFileSync(filePath);
   const ext = path.extname(filePath).toLowerCase();
-  const mimeTypes = {
+  const mimeTypes: Record<string, string> = {
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
@@ -53,7 +121,7 @@ function fileToDataUrl(filePath) {
     '.webp': 'image/webp',
     '.svg': 'image/svg+xml',
   };
-  const mimeType = mimeTypes[ext] || 'application/octet-stream';
+  const mimeType = mimeTypes[ext] ?? 'application/octet-stream';
   return `data:${mimeType};base64,${buffer.toString('base64')}`;
 }
 
@@ -66,7 +134,7 @@ function buildHtmlDocument({
   enableMath,
   margin,
   brand,
-}) {
+}: HtmlDocumentOptions): string {
   const theme = getTheme(themeName);
   const inlineMathAssets = enableMath
     ? `
@@ -120,26 +188,21 @@ function buildHtmlDocument({
 </html>`;
 }
 
-function buildBrandBlock(brand) {
+function buildBrandBlock(brand?: BrandOptions | null): string {
   if (!brand || (!brand.name && !brand.logoSrc)) {
     return '';
   }
 
-  const eyebrow = brand.eyebrow || 'Made by';
-  const placement = brand.placement === 'title' ? 'title' : 'corner';
+  const placement: BrandPlacement = brand.placement === 'title' ? 'title' : 'corner';
   const image = brand.logoSrc
     ? `<img src="${brand.logoSrc}" alt="${escapeHtml(brand.name || 'Brand logo')}">`
     : '';
-  const eyebrowBlock = placement === 'title' && brand.name
-    ? `<div class="brand__eyebrow">${escapeHtml(eyebrow)}</div>`
-    : '';
   const nameBlock = brand.name
-    ? `<div class="brand__name">${escapeHtml(brand.name)}</div>`
+    ? `<div class="brand__name">by ${escapeHtml(brand.name)}</div>`
     : '';
-  const textBlock = placement === 'title' && (eyebrowBlock || nameBlock)
+  const textBlock = nameBlock
     ? `
       <div class="brand__text">
-        ${eyebrowBlock}
         ${nameBlock}
       </div>
     `
@@ -153,7 +216,7 @@ function buildBrandBlock(brand) {
   `;
 }
 
-function resolveOutputPath(inputPath, outputPath) {
+function resolveOutputPath(inputPath: string, outputPath?: string): string {
   if (outputPath) {
     return path.resolve(outputPath);
   }
@@ -162,9 +225,9 @@ function resolveOutputPath(inputPath, outputPath) {
   return path.join(parsed.dir, `${parsed.name}.pdf`);
 }
 
-function findBrowserCandidates() {
-  const candidates = [];
-  const add = (value) => {
+function findBrowserCandidates(): string[] {
+  const candidates: string[] = [];
+  const add = (value?: string) => {
     if (value && !candidates.includes(value)) {
       candidates.push(value);
     }
@@ -218,30 +281,31 @@ function findBrowserCandidates() {
   });
 }
 
-async function launchBrowser(executablePath) {
-  const tried = [];
-  const launch = async (options) => chromium.launch({ headless: true, ...options });
+async function launchBrowser(executablePath?: string): Promise<Browser> {
+  const tried: string[] = [];
+  const launch = async (options: Parameters<typeof chromium.launch>[0]): Promise<Browser> =>
+    chromium.launch({ headless: true, ...options });
 
   for (const candidate of executablePath ? [executablePath] : findBrowserCandidates()) {
     try {
       return await launch({ executablePath: candidate });
     } catch (error) {
-      tried.push(`${candidate}: ${error.message}`);
+      tried.push(`${candidate}: ${(error as Error).message}`);
     }
   }
 
-  for (const channel of ['chrome', 'msedge']) {
+  for (const channel of ['chrome', 'msedge'] as const) {
     try {
       return await launch({ channel });
     } catch (error) {
-      tried.push(`${channel}: ${error.message}`);
+      tried.push(`${channel}: ${(error as Error).message}`);
     }
   }
 
   try {
     return await launch({});
   } catch (error) {
-    tried.push(`playwright-bundled: ${error.message}`);
+    tried.push(`playwright-bundled: ${(error as Error).message}`);
   }
 
   throw new Error(
@@ -252,29 +316,34 @@ async function launchBrowser(executablePath) {
   );
 }
 
-async function waitForRender(page, enableMath) {
+async function waitForRender(page: Page, enableMath: boolean): Promise<void> {
   await page.waitForLoadState('networkidle');
-  await page.evaluate(async (mathEnabled) => {
+  await page.evaluate(async (mathEnabled: boolean) => {
     if (document.fonts?.ready) {
       try {
         await document.fonts.ready;
       } catch {}
     }
 
-    if (mathEnabled && typeof window.__MD2PDF_MATH__ === 'function') {
-      window.__MD2PDF_MATH__();
+    if (
+      mathEnabled &&
+      typeof (window as Window & { __MD2PDF_MATH__?: () => void }).__MD2PDF_MATH__ === 'function'
+    ) {
+      (window as Window & { __MD2PDF_MATH__?: () => void }).__MD2PDF_MATH__?.();
     }
 
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
   }, enableMath);
 }
 
-async function convertMarkdownToPdf(options) {
+export async function convertMarkdownToPdf(options: ConvertOptions): Promise<string> {
   const inputPath = path.resolve(options.inputPath);
   const outputPath = resolveOutputPath(inputPath, options.outputPath);
-  const markdown = fs.readFileSync(inputPath, 'utf8');
+  const markdown = stripFrontmatter(fs.readFileSync(inputPath, 'utf8'));
   const markdownRenderer = createMarkdownRenderer();
-  const bodyHtml = markdownRenderer.render(markdown);
+  const bodyHtml = markdownRenderer.render(markdown, { markdownPath: inputPath });
   const customCss = options.customCssPath
     ? fs.readFileSync(path.resolve(options.customCssPath), 'utf8')
     : '';
@@ -310,6 +379,12 @@ async function convertMarkdownToPdf(options) {
         bottom: '0',
         left: '0',
       },
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate:
+        '<div style="width:100%;font-size:9px;color:#94a3b8;padding:0 16mm 8px 16mm;text-align:center;">' +
+        '<span class="pageNumber"></span> / <span class="totalPages"></span>' +
+        '</div>',
       printBackground: true,
       outline: options.outline,
       tagged: true,
@@ -321,7 +396,3 @@ async function convertMarkdownToPdf(options) {
 
   return outputPath;
 }
-
-module.exports = {
-  convertMarkdownToPdf,
-};

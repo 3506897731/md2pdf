@@ -1,12 +1,23 @@
 #!/usr/bin/env node
-'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { Command } = require('commander');
+import fs from 'node:fs';
+import path from 'node:path';
 
-const { convertMarkdownToPdf } = require('./render');
-const { listThemes } = require('./themes');
+import { Command } from 'commander';
+
+import { convertMarkdownToPdf } from './render';
+import { listThemes } from './themes';
+
+interface CliOptions {
+  output?: string;
+  theme: string;
+  css?: string;
+  browser?: string;
+  title?: string;
+  format: string;
+  margin: string;
+  listThemes?: boolean;
+}
 
 const program = new Command();
 
@@ -19,16 +30,10 @@ program
   .option('--css <file>', 'Extra CSS file to append after the built-in theme')
   .option('--browser <path>', 'Explicit Chromium/Chrome executable path')
   .option('--title <title>', 'Override the PDF document title')
-  .option('--logo <file>', 'Brand logo shown at the top of the document')
-  .option('--brand-name <name>', 'Brand name shown next to the logo')
-  .option('--brand-eyebrow <text>', 'Small label shown above the brand name', 'Made by')
-  .option('--brand-placement <mode>', 'Brand placement: corner or title', 'corner')
   .option('--format <size>', 'PDF page format', 'A4')
   .option('--margin <size>', 'Page margin for all sides', '16mm')
-  .option('--no-math', 'Disable KaTeX auto-rendering')
-  .option('--no-outline', 'Disable PDF outline/bookmarks')
   .option('--list-themes', 'Print the available built-in themes')
-  .action(async (input, options) => {
+  .action(async (input: string | undefined, options: CliOptions) => {
     try {
       if (options.listThemes) {
         for (const theme of listThemes()) {
@@ -41,7 +46,7 @@ program
         program.error('Missing input Markdown file. Pass a file path or use --list-themes.');
       }
 
-      const inputPath = path.resolve(input);
+      const inputPath = path.resolve(input as string);
       if (!fs.existsSync(inputPath)) {
         program.error(`Input file not found: ${inputPath}`);
       }
@@ -55,21 +60,20 @@ program
         title: options.title,
         format: options.format,
         margin: options.margin,
-        math: options.math,
-        outline: options.outline,
+        math: true,
+        outline: true,
         brand: {
-          name: options.brandName,
-          eyebrow: options.brandEyebrow,
-          placement: options.brandPlacement,
-          logoPath: options.logo ? path.resolve(options.logo) : '',
+          name: 'morro',
+          placement: 'corner',
+          logoPath: path.resolve(__dirname, '..', 'assets', 'morro-logo.png'),
         },
       });
 
       console.log(`Wrote PDF: ${outputPath}`);
     } catch (error) {
-      console.error(error.message);
+      console.error((error as Error).message);
       process.exitCode = 1;
     }
   });
 
-program.parseAsync(process.argv);
+void program.parseAsync(process.argv);
